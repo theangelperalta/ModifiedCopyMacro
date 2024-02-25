@@ -114,24 +114,30 @@ final class ModifiedCopyTests: XCTestCase {
                     self.nickName = nickName
                 }
 
-                /// Returns a copy of the caller whose value for `name` is different.
-                private func copy(name: String) -> Self {
-                    .init(name: name, age: age, favoriteColor: favoriteColor, nickName: nickName)
-                }
-
-                /// Returns a copy of the caller whose value for `age` is different.
-                public func copy(age: Int) -> Self {
-                    .init(name: name, age: age, favoriteColor: favoriteColor, nickName: nickName)
-                }
-
-                /// Returns a copy of the caller whose value for `favoriteColor` is different.
-                private func copy(favoriteColor: String) -> Self {
-                    .init(name: name, age: age, favoriteColor: favoriteColor, nickName: nickName)
-                }
+                /// Returns a copy of the caller allowing you to alter some of its properties while keeping the rest unchanged.
+                public func copy(build: (inout Builder) -> Void) -> Self {
+                    var builder = Builder(original: self)
+                    build(&builder)
             
-                /// Returns a copy of the caller whose value for `nickName` is different.
-                public func copy(nickName: String?) -> Self {
-                    .init(name: name, age: age, favoriteColor: favoriteColor, nickName: nickName)
+                    return builder.toPerson()
+                }
+
+                public struct Builder {
+                    var name: String
+                    var age: Int
+                    var favoriteColor: String
+                    var nickName: String?
+
+                    fileprivate init(original: Person) {
+                        self.name = original.name
+                        self.age = original.age
+                        self.favoriteColor = original.favoriteColor
+                        self.nickName = original.nickName
+                    }
+
+                    fileprivate func toPerson() -> Person {
+                        return Person(name: name, age: age, favoriteColor: favoriteColor, nickName: nickName)
+                    }
                 }
             }
             """#,
@@ -141,25 +147,25 @@ final class ModifiedCopyTests: XCTestCase {
     
     func testNewLetValue() {
         let person = Person(name: "Walter White", age: 50, nickName: "Heisenberg")
-        let copiedPerson = person.copy(age: 51)
+        let copiedPerson = person.copy { $0.age = 51 }
         XCTAssertEqual(Person(name: "Walter White", age: 51, nickName: "Heisenberg"), copiedPerson)
     }
     
     func testNewVarValue() {
         let person = Person(name: "Walter White", age: 50, nickName: "Heisenberg")
-        let copiedPerson = person.copy(name: "W.W.")
+        let copiedPerson = person.copy { $0.name = "W.W." }
         XCTAssertEqual(Person(name: "W.W.", age: 50, nickName: "Heisenberg"), copiedPerson)
     }
     
     func testNewOptionalValue() {
         let person = Person(name: "Walter White", age: 50, nickName: "Heisenberg")
-        let copiedPerson = person.copy(nickName: nil)
+        let copiedPerson = person.copy { $0.nickName =  nil}
         XCTAssertEqual(Person(name: "Walter White", age: 50, nickName: nil), copiedPerson)
     }
     
     func testChainedNewValues() {
         let person = Person(name: "Walter White", age: 50, nickName: "Heisenberg")
-        let copiedPerson = person.copy(name: "Skyler White").copy(age: 48)
+        let copiedPerson = person.copy { $0.name = "Skyler White"; $0.age = 48 }
         XCTAssertEqual(Person(name: "Skyler White", age: 48, nickName: "Heisenberg"), copiedPerson)
     }
 }

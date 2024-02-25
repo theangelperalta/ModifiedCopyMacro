@@ -52,27 +52,43 @@ public struct ModifiedCopyMacro: MemberMacro {
         
         let bindings = variables.flatMap(\.bindings).filter { accessorIsAllowed($0.accessorBlock?.accessors) }
         
-        return variables.flatMap { variable in
-            let variableVisibility = variable.modifiers.visibilityText() ?? structVisibility
-            
-            return variable.bindings
-                .filter { accessorIsAllowed($0.accessorBlock?.accessors) }
-                .compactMap { binding -> DeclSyntax? in
-                    let propertyName = binding.pattern
-                guard let typeName = binding.typeAnnotation?.type else {
+        let usableVariables = variables
+            .flatMap { $0.bindings }
+            .filter { accessorIsAllowed($0.accessorBlock?.accessors) }
+            .compactMap { binding -> PatternBindingSyntax? in
+                let propertyName = binding.pattern
+                guard ((binding.typeAnnotation?.type) != nil) else {
                     let diagnostic = Diagnostic(node: Syntax(node), message: ModifiedCopyDiagnostic.propertyTypeProblem(binding))
                     context.diagnose(diagnostic)
                     return nil
                 }
                 
-                return """
-                    /// Returns a copy of the caller whose value for `\(propertyName)` is different.
-                    \(raw: variableVisibility) func copy(\(propertyName): \(typeName.trimmed)) -> Self {
-                        .init(\(raw: bindings.map { "\($0.pattern): \($0.pattern)" }.joined(separator: ", ")))
-                    }
-                    """
+                return binding
             }
-        }
+        
+        return [
+            """
+            /// Returns a copy of the caller allowing you to alter some of its properties while keeping the rest unchanged.
+            public func copy(build: (inout Builder) -> Void) -> Self {
+                var builder = Builder(original: self)
+                build(&builder)
+                        
+                return builder.to\(structDeclSyntax.name.trimmed)()
+            }
+            
+            public struct Builder {
+                \(raw: usableVariables.map { "var \($0.pattern.trimmedDescription.trimmingCharacters(in: .whitespacesAndNewlines)): \($0.typeAnnotation!.type.trimmedDescription.trimmingCharacters(in: .whitespacesAndNewlines))"}.joined(separator: "\n    "))
+                    
+                fileprivate init(original: \(structDeclSyntax.name.trimmed)) {
+                    \(raw: usableVariables.map { "self.\($0.pattern.trimmedDescription.trimmingCharacters(in: .whitespaces)) = original.\($0.pattern.trimmedDescription.trimmingCharacters(in: .whitespaces))" }.joined(separator: "\n"))
+                }
+                
+                fileprivate func to\(structDeclSyntax.name.trimmed)() -> \(structDeclSyntax.name.trimmed) {
+                    return \(structDeclSyntax.name.trimmed)(\(raw: usableVariables.map { "\($0.pattern.trimmed): \($0.pattern.trimmed)" }.joined(separator: ", ")))
+                }
+            }
+            """
+        ]
     }
     
     private static func accessorIsAllowed(_ accessor: AccessorBlockSyntax.Accessors?) -> Bool {
