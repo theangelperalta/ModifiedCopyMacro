@@ -38,6 +38,8 @@ struct Person: Equatable {
 
 final class ModifiedCopyTests: XCTestCase {
     func testMacroExpansion() {
+        
+        
         assertMacroExpansion(
             #"""
             @Copyable
@@ -45,7 +47,7 @@ final class ModifiedCopyTests: XCTestCase {
                 private(set) var name: String
                 
                 let age: Int
-
+                
                 private var favoriteColor: String
                 
                 /// This should not generate a copy function because it's not a stored property.
@@ -57,12 +59,12 @@ final class ModifiedCopyTests: XCTestCase {
                         name = newValue
                     }
                 }
-
+                
                 /// This should not generate a copy function because it's not a stored property.
                 var uppercasedName: String {
                     name.uppercased()
                 }
-
+                
                 var nickName: String? = "Bobby Tables" {
                     didSet {
                         print("nickName changed to \(nickName ?? "(nil)")")
@@ -83,7 +85,7 @@ final class ModifiedCopyTests: XCTestCase {
                 private(set) var name: String
                 
                 let age: Int
-
+                
                 private var favoriteColor: String
                 
                 /// This should not generate a copy function because it's not a stored property.
@@ -95,12 +97,12 @@ final class ModifiedCopyTests: XCTestCase {
                         name = newValue
                     }
                 }
-
+                
                 /// This should not generate a copy function because it's not a stored property.
                 var uppercasedName: String {
                     name.uppercased()
                 }
-
+                
                 var nickName: String? = "Bobby Tables" {
                     didSet {
                         print("nickName changed to \(nickName ?? "(nil)")")
@@ -127,14 +129,14 @@ final class ModifiedCopyTests: XCTestCase {
                     var age: Int
                     var favoriteColor: String
                     var nickName: String?
-
+                    
                     fileprivate init(original: Person) {
                         self.name = original.name
                         self.age = original.age
                         self.favoriteColor = original.favoriteColor
                         self.nickName = original.nickName
                     }
-
+                    
                     fileprivate func toPerson() -> Person {
                         return Person(name: name, age: age, favoriteColor: favoriteColor, nickName: nickName)
                     }

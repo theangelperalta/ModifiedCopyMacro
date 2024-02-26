@@ -72,15 +72,15 @@ public struct ModifiedCopyMacro: MemberMacro {
             public func copy(build: (inout Builder) -> Void) -> Self {
                 var builder = Builder(original: self)
                 build(&builder)
-                        
+                
                 return builder.to\(structDeclSyntax.name.trimmed)()
             }
             
             public struct Builder {
-                \(raw: usableVariables.map { "var \($0.pattern.trimmedDescription.trimmingCharacters(in: .whitespacesAndNewlines)): \($0.typeAnnotation!.type.trimmedDescription.trimmingCharacters(in: .whitespacesAndNewlines))"}.joined(separator: "\n    "))
-                    
+            \(raw: constructVarList(usableVariables: usableVariables))
+                
                 fileprivate init(original: \(structDeclSyntax.name.trimmed)) {
-                    \(raw: usableVariables.map { "self.\($0.pattern.trimmedDescription.trimmingCharacters(in: .whitespaces)) = original.\($0.pattern.trimmedDescription.trimmingCharacters(in: .whitespaces))" }.joined(separator: "\n"))
+            \(raw: constructInitVarList(usableVariables: usableVariables))
                 }
                 
                 fileprivate func to\(structDeclSyntax.name.trimmed)() -> \(structDeclSyntax.name.trimmed) {
@@ -89,6 +89,32 @@ public struct ModifiedCopyMacro: MemberMacro {
             }
             """
         ]
+    }
+    
+    private static func constructVarList(usableVariables: [PatternBindingSyntax]) -> String {
+        var varList: [String] = []
+        for (index, variable) in usableVariables.enumerated() {
+            var terminatingStr = ""
+            
+            if index < usableVariables.count - 1 {
+                terminatingStr = "\n"
+            }
+            varList.append("    var \(variable.pattern.trimmedDescription.trimmingCharacters(in: .whitespaces)): \(variable.typeAnnotation!.type.trimmedDescription.trimmingCharacters(in: .whitespaces))" + terminatingStr)
+        }
+        return varList.joined()
+    }
+    
+    private static func constructInitVarList(usableVariables: [PatternBindingSyntax]) -> String {
+        var varList: [String] = []
+        for (index, variable) in usableVariables.enumerated() {
+            var terminatingStr = ""
+            
+            if index < usableVariables.count - 1 {
+                terminatingStr = "\n"
+            }
+            varList.append("        self.\(variable.pattern.trimmedDescription.trimmingCharacters(in: .whitespaces)) = original.\(variable.pattern.trimmedDescription.trimmingCharacters(in: .whitespaces))" + terminatingStr)
+        }
+        return varList.joined()
     }
     
     private static func accessorIsAllowed(_ accessor: AccessorBlockSyntax.Accessors?) -> Bool {
