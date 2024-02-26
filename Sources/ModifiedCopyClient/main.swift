@@ -37,4 +37,4 @@ public struct Person {
     }
 }
 
-print("Person copy with new age: \(Person(name: "Hank", age: 50, favoriteColor: "pink", nickName: "Hanky").copy(build: { $0.age = 42}))")
+print("Person copy with new age: \(Person(name: "Hank", age: 50, favoriteColor: "pink", nickName: "Hanky").copy{ $0.age = 42}))")
